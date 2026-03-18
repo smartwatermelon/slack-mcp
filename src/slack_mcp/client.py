@@ -15,27 +15,34 @@ class SlackAPIError(Exception):
 
 class SlackClient:
     BASE_URL = "https://slack.com/api/"
+    TIMEOUT = httpx.Timeout(30.0)
 
     def __init__(self, credential: WorkspaceCredential) -> None:
         self._headers = {
             "Authorization": f"Bearer {credential.token}",
             "Cookie": f"d={credential.d_cookie}",
         }
+        self._http = httpx.Client(timeout=self.TIMEOUT)
+
+    def __del__(self) -> None:
+        self._http.close()
 
     def get(self, method: str, **params: object) -> dict:
         return self._request(method, params)
 
     def _request(self, method: str, params: dict, *, _retry: bool = True) -> dict:
-        with httpx.Client() as http:
-            response = http.post(
-                f"{self.BASE_URL}{method}",
-                data=params,
-                headers=self._headers,
-            )
+        response = self._http.post(
+            f"{self.BASE_URL}{method}",
+            data=params,
+            headers=self._headers,
+        )
 
         if response.status_code == 429:
             if _retry:
-                retry_after = int(response.headers.get("Retry-After", "1"))
+                try:
+                    retry_after = int(response.headers.get("Retry-After", "1"))
+                except ValueError:
+                    retry_after = 1
                 time.sleep(retry_after)
                 return self._request(method, params, _retry=False)
             response.raise_for_status()
@@ -62,7 +69,11 @@ class SlackClient:
                 request_params["cursor"] = cursor
 
             data = self._request(method, request_params)
-            results.extend(data.get(key, []))
+            batch = data.get(key, [])
+            results.extend(batch)
+
+            if not batch:  # empty page — stop even if cursor present
+                break
 
             cursor = data.get("response_metadata", {}).get("next_cursor") or None
             if not cursor:

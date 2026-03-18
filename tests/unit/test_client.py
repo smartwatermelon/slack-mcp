@@ -1,4 +1,5 @@
 import time
+from unittest.mock import MagicMock
 
 import httpx
 import pytest
@@ -62,15 +63,17 @@ def test_5xx_raises_immediately(client):
 
 @respx.mock
 def test_429_retries_once(client, monkeypatch):
-    monkeypatch.setattr(time, "sleep", lambda _: None)
+    mock_sleep = MagicMock()
+    monkeypatch.setattr(time, "sleep", mock_sleep)
     route = respx.post("https://slack.com/api/users.list")
     route.side_effect = [
-        httpx.Response(429, headers={"Retry-After": "1"}),
+        httpx.Response(429, headers={"Retry-After": "2"}),
         httpx.Response(200, json={"ok": True, "members": []}),
     ]
     result = client.get("users.list")
     assert result["ok"] is True
     assert route.call_count == 2
+    mock_sleep.assert_called_once_with(2)
 
 
 @respx.mock
@@ -123,3 +126,34 @@ def test_paginated_respects_limit(client):
         )
     )
     assert len(client.get_paginated("conversations.list", "channels", 3)) == 3
+
+
+@respx.mock
+def test_paginated_breaks_on_empty_batch(client):
+    route = respx.post("https://slack.com/api/conversations.list")
+    route.side_effect = [
+        httpx.Response(
+            200,
+            json={
+                "ok": True,
+                "channels": [],
+                "response_metadata": {"next_cursor": "some_cursor"},
+            },
+        ),
+    ]
+    result = client.get_paginated("conversations.list", "channels", 200)
+    assert result == []
+    assert route.call_count == 1  # did not loop
+
+
+@respx.mock
+def test_429_non_numeric_retry_after_defaults_to_1(client, monkeypatch):
+    mock_sleep = MagicMock()
+    monkeypatch.setattr(time, "sleep", mock_sleep)
+    route = respx.post("https://slack.com/api/users.list")
+    route.side_effect = [
+        httpx.Response(429, headers={"Retry-After": "not-a-number"}),
+        httpx.Response(200, json={"ok": True, "members": []}),
+    ]
+    client.get("users.list")
+    mock_sleep.assert_called_once_with(1)
