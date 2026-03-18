@@ -1,0 +1,34 @@
+[project]
+name = "slack-mcp"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.0.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+setup = [
+    "slacktokens @ git+https://github.com/hraftery/slacktokens.git",
+]
+dev = [
+    "pytest>=8",
+    "respx>=0.21",
+]
+
+[project.scripts]
+slack-mcp-server = "slack_mcp.server:main"
+slack-mcp-setup  = "slack_mcp.setup:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/slack_mcp"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
