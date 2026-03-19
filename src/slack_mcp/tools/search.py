@@ -31,6 +31,5 @@ def register(mcp: FastMCP, creds: Credentials) -> None:
         query: str, workspace: str = "", count: int = 20, sort: str = "score"
     ) -> dict:
         """Search messages in a Slack workspace."""
-        return _search_messages(
-            SlackClient(get_workspace(creds, workspace)), query, count, sort
-        )
+        with SlackClient(get_workspace(creds, workspace)) as client:
+            return _search_messages(client, query, count, sort)

@@ -68,9 +68,8 @@ def register(mcp: FastMCP, creds: Credentials) -> None:
         limit: int = 200,
     ) -> list[dict]:
         """List channels in a Slack workspace."""
-        return _list_channels(
-            SlackClient(get_workspace(creds, workspace)), types, limit
-        )
+        with SlackClient(get_workspace(creds, workspace)) as client:
+            return _list_channels(client, types, limit)
 
     @mcp.tool()
     def get_channel_history(
@@ -81,17 +80,11 @@ def register(mcp: FastMCP, creds: Credentials) -> None:
         latest: str = "",
     ) -> list[dict]:
         """Get message history for a Slack channel."""
-        return _get_channel_history(
-            SlackClient(get_workspace(creds, workspace)),
-            channel_id,
-            oldest,
-            latest,
-            limit,
-        )
+        with SlackClient(get_workspace(creds, workspace)) as client:
+            return _get_channel_history(client, channel_id, oldest, latest, limit)
 
     @mcp.tool()
     def get_channel_info(channel_id: str, workspace: str = "") -> dict:
         """Get info about a Slack channel."""
-        return _get_channel_info(
-            SlackClient(get_workspace(creds, workspace)), channel_id
-        )
+        with SlackClient(get_workspace(creds, workspace)) as client:
+            return _get_channel_info(client, channel_id)

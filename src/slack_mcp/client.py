@@ -24,7 +24,10 @@ class SlackClient:
         }
         self._http = httpx.Client(timeout=self.TIMEOUT)
 
-    def __del__(self) -> None:
+    def __enter__(self) -> SlackClient:
+        return self
+
+    def __exit__(self, *args: object) -> None:
         self._http.close()
 
     def get(self, method: str, **params: object) -> dict:

@@ -47,9 +47,11 @@ def register(mcp: FastMCP, creds: Credentials) -> None:
     @mcp.tool()
     def get_user_info(user_id: str, workspace: str = "") -> dict:
         """Get info about a Slack user by ID."""
-        return _get_user_info(SlackClient(get_workspace(creds, workspace)), user_id)
+        with SlackClient(get_workspace(creds, workspace)) as client:
+            return _get_user_info(client, user_id)
 
     @mcp.tool()
     def list_users(workspace: str = "", limit: int = 100) -> list[dict]:
         """List users in a Slack workspace."""
-        return _list_users(SlackClient(get_workspace(creds, workspace)), limit)
+        with SlackClient(get_workspace(creds, workspace)) as client:
+            return _list_users(client, limit)

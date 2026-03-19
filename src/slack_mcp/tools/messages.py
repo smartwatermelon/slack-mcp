@@ -24,6 +24,5 @@ def register(mcp: FastMCP, creds: Credentials) -> None:
         channel_id: str, thread_ts: str, workspace: str = "", limit: int = 100
     ) -> list[dict]:
         """Get all replies in a Slack thread."""
-        return _get_thread(
-            SlackClient(get_workspace(creds, workspace)), channel_id, thread_ts, limit
-        )
+        with SlackClient(get_workspace(creds, workspace)) as client:
+            return _get_thread(client, channel_id, thread_ts, limit)

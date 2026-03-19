@@ -5,7 +5,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-TOKEN_RE = re.compile(r"xox[a-zA-Z]-[a-zA-Z0-9-]+")
+TOKEN_RE = re.compile(r"xoxc-[a-zA-Z0-9-]+")
 
 
 def main() -> None:
