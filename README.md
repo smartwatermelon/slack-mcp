@@ -46,7 +46,7 @@ python3.11 -m venv .venv
 
 # 3. Install with setup extras (pulls in slacktokens + leveldb)
 #    If pip is blocked by your system (e.g. Homebrew-managed Python), use uv pip instead:
-#      uv pip install --python .venv -e ".[setup]"
+#      uv pip install --python .venv/bin/python -e ".[setup]"
 .venv/bin/pip install -e ".[setup]"
 
 # 4. Quit Slack, then extract tokens
@@ -77,7 +77,7 @@ brew install python@3.11
 # Using uv
 uv python install 3.11
 uv venv --python 3.11 .venv
-uv pip install --python .venv -e ".[setup]"
+uv pip install --python .venv/bin/python -e ".[setup]"
 ```
 
 If you installed Python 3.11 via Homebrew, use the `uv pip` form in step 3 above —
