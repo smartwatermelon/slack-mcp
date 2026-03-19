@@ -31,7 +31,7 @@ def test_main_exits_if_slack_running(monkeypatch):
     assert exc.value.code == 1
 
 
-def test_main_extracts_tokens_from_leveldb(monkeypatch, tmp_path):
+def test_main_extracts_tokens_from_leveldb(monkeypatch):
     """Tokens and cookie are read directly from slacktokens output (no HTTP needed)."""
     mock_slacktokens = MagicMock()
     mock_slacktokens.get_tokens_and_cookie.return_value = {
@@ -47,31 +47,21 @@ def test_main_extracts_tokens_from_leveldb(monkeypatch, tmp_path):
     if "slack_mcp.setup" in sys.modules:
         del sys.modules["slack_mcp.setup"]
 
-    creds_dir = tmp_path / ".config" / "slack-mcp"
-    creds_dir.mkdir(parents=True)
-
+    # Patch save_credentials on auth — CREDENTIALS_PATH patching does NOT work because
+    # save_credentials captures its default path value at definition time.
     with (
         patch("subprocess.run", return_value=MagicMock(returncode=1)),
         patch("slack_mcp.setup._patch_pycookiecheat_for_direct_download"),
-        patch(
-            "slack_mcp.auth.CREDENTIALS_PATH",
-            tmp_path / ".config" / "slack-mcp" / "credentials.json",
-        ),
+        patch("slack_mcp.auth.save_credentials") as mock_save,
     ):
         from slack_mcp import setup as setup_mod
 
         setup_mod.main()
 
-    from slack_mcp.auth import load_credentials
-
-    with patch(
-        "slack_mcp.auth.CREDENTIALS_PATH",
-        tmp_path / ".config" / "slack-mcp" / "credentials.json",
-    ):
-        creds = load_credentials()
-
-    assert "test-workspace" in creds.workspaces
-    ws = creds.workspaces["test-workspace"]
+    mock_save.assert_called_once()
+    saved_creds = mock_save.call_args[0][0]
+    assert "test-workspace" in saved_creds.workspaces
+    ws = saved_creds.workspaces["test-workspace"]
     assert ws.token == "xoxc-abc123"
     assert ws.d_cookie == "xoxd-xyz789"
 
