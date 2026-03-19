@@ -1,11 +1,57 @@
 from __future__ import annotations
 
-import re
 import subprocess
 import sys
 from datetime import datetime, timezone
 
-TOKEN_RE = re.compile(r"xoxc-[a-zA-Z0-9-]+")
+# Account names used by pycookiecheat to look up the Slack decryption key.
+# App Store Slack uses "Slack App Store Key"; direct-download uses "Slack Key".
+_SLACK_KEYCHAIN_ACCOUNTS = ["Slack App Store Key", "Slack Key"]
+
+
+def _patch_pycookiecheat_for_direct_download() -> None:
+    """Patch pycookiecheat to try both Slack keychain account names.
+
+    pycookiecheat hardcodes "Slack App Store Key", which fails for
+    direct-download Slack installs that use "Slack Key" instead.
+    """
+    try:
+        import keyring
+        import pycookiecheat.chrome as _pc
+        from pathlib import Path
+        from pycookiecheat.chrome import BrowserType
+    except ImportError:
+        return  # pycookiecheat not installed; slacktokens will surface its own error
+
+    _orig = _pc.get_macos_config
+
+    def _patched(browser: BrowserType) -> dict:
+        try:
+            return _orig(browser)
+        except ValueError:
+            if browser is not BrowserType.SLACK:
+                raise
+            # Try alternative keychain account names for direct-download Slack
+            for account in _SLACK_KEYCHAIN_ACCOUNTS:
+                key_material = keyring.get_password("Slack Safe Storage", account)
+                if key_material is not None:
+                    cookie_file = (
+                        Path.home() / "Library/Application Support/Slack/Cookies"
+                    )
+                    if not cookie_file.exists():
+                        cookie_file = (
+                            Path.home()
+                            / "Library/Containers/com.tinyspeck.slackmacgap"
+                            / "Data/Library/Application Support/Slack/Cookies"
+                        )
+                    return {
+                        "key_material": key_material,
+                        "iterations": 1003,
+                        "cookie_file": cookie_file,
+                    }
+            raise  # no account name worked; surface the original error
+
+    _pc.get_macos_config = _patched
 
 
 def main() -> None:
@@ -31,13 +77,16 @@ def main() -> None:
         sys.exit(1)
 
     # Step 3: Extract tokens
-    import httpx
-
     from slack_mcp.auth import Credentials, WorkspaceCredential, save_credentials
+
+    # pycookiecheat hardcodes "Slack App Store Key" as the keychain account name,
+    # but direct-download Slack uses "Slack Key". Patch it to try both.
+    _patch_pycookiecheat_for_direct_download()
 
     print("Extracting Slack tokens...")
     token_data = slacktokens.get_tokens_and_cookie()
-    cookie = token_data.get("cookie", "")
+    # cookie is returned as {'name': 'd', 'value': 'xoxd-...'}
+    d_cookie: str = token_data.get("cookie", {}).get("value", "")
     tokens: dict = token_data.get("tokens", {})
 
     workspaces: dict[str, WorkspaceCredential] = {}
@@ -48,25 +97,13 @@ def main() -> None:
             .removesuffix("/")
             .replace(".slack.com", "")
         )
-        d_cookie = token_info.get("d_cookie") or cookie
-
-        try:
-            resp = httpx.get(
-                workspace_url,
-                headers={"Cookie": f"d={d_cookie}"},
-                follow_redirects=True,
+        # slacktokens extracts the xoxc- token directly from LevelDB localStorage
+        xoxc_token: str = token_info.get("token", "")
+        if not xoxc_token:
+            print(
+                f"Warning: no token found for '{workspace_name}', skipping.",
+                file=sys.stderr,
             )
-            match = TOKEN_RE.search(resp.text)
-            if not match:
-                print(
-                    f"Warning: could not extract xoxc- token for"
-                    f" '{workspace_name}', skipping.",
-                    file=sys.stderr,
-                )
-                continue
-            xoxc_token = match.group(0)
-        except Exception as e:
-            print(f"Warning: failed to fetch '{workspace_url}': {e}", file=sys.stderr)
             continue
 
         workspaces[workspace_name] = WorkspaceCredential(
