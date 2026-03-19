@@ -43,17 +43,18 @@ cd slack-mcp
 
 # 2. Create a Python 3.11 environment (required — slacktokens does not support 3.12+)
 python3.11 -m venv .venv
-source .venv/bin/activate
 
 # 3. Install with setup extras (pulls in slacktokens + leveldb)
-pip install -e ".[setup]"
+#    If pip is blocked by your system (e.g. Homebrew-managed Python), use uv pip instead:
+#      uv pip install --python .venv -e ".[setup]"
+.venv/bin/pip install -e ".[setup]"
 
 # 4. Quit Slack, then extract tokens
 #    (LevelDB does not support concurrent access — Slack must be fully quit)
 osascript -e 'quit app "Slack"'
-slack-mcp-setup
+.venv/bin/slack-mcp-setup
 
-# 5. Register with Claude Code
+# 5. Register with Claude Code (use the absolute path to your clone)
 claude mcp add slack-mcp -- /path/to/slack-mcp/.venv/bin/slack-mcp-server
 
 # 6. Restart Slack
@@ -61,6 +62,9 @@ open -a Slack
 ```
 
 After step 5, restart your Claude Code session. The server connects automatically at startup.
+
+The venv does not need to stay active after setup. Claude Code launches the server binary
+directly via the path registered in step 5.
 
 ### Getting Python 3.11
 
@@ -73,7 +77,11 @@ brew install python@3.11
 # Using uv
 uv python install 3.11
 uv venv --python 3.11 .venv
+uv pip install --python .venv -e ".[setup]"
 ```
+
+If you installed Python 3.11 via Homebrew, use the `uv pip` form in step 3 above —
+Homebrew's Python may block `pip install` with an "externally managed environment" error.
 
 ### Multiple workspaces
 
@@ -101,7 +109,7 @@ Tokens are valid for approximately one year. When they expire, re-run setup:
 
 ```bash
 osascript -e 'quit app "Slack"'
-slack-mcp-setup
+/path/to/slack-mcp/.venv/bin/slack-mcp-setup
 open -a Slack
 ```
 
