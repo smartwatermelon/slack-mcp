@@ -131,6 +131,18 @@ Re-run `slack-mcp-setup` to refresh credentials, then restart your Claude Code s
 **Tokens expired / "invalid_auth" errors**
 Re-run `slack-mcp-setup` (see Token refresh above).
 
+## Credits
+
+This project builds on two pieces of prior work:
+
+- **[slacktokens](https://github.com/hraftery/slacktokens)** by Heath Raftery — extracts
+  Slack session tokens and cookies from the desktop app's local storage. `slack-mcp-setup`
+  uses this library directly.
+
+- **[Retrieving and Using Slack Cookies for Authentication](https://www.papermtn.co.uk/retrieving-and-using-slack-cookies-for-authentication/)**
+  by PaperMtn — the original research documenting how Slack's `xoxc-`/`xoxd-` token pair
+  works and how to extract it. The technique this project depends on is explained there.
+
 ## Known limitations
 
 - **macOS only** — `slacktokens` reads the macOS keychain; Linux support is not planned for v1
