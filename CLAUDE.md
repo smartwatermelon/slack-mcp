@@ -8,30 +8,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **This project is currently in the spec phase.** The implementation spec is in `SPEC-slack-mcp_1.md`.
 
-## Development Commands
+## Development Environment
+
+Project venv lives at `.venv/`. Always use venv-qualified binaries — bare `pytest`, `python`, `pip`, and `black` are **not on PATH**.
 
 ```bash
 # Install in editable mode (after creating pyproject.toml)
-pip install -e .
+.venv/bin/python -m pip install -e .
 
 # One-time token extraction (Slack app must be QUIT first)
 slack-mcp-setup
 
 # Run the MCP server manually (for debugging)
-python -m slack_mcp.server
+python3 -m slack_mcp.server
 
 # Register with Claude Code
 claude mcp add slack-mcp -- slack-mcp-server
 
 # Run tests
-pytest
+.venv/bin/pytest
 
 # Run a single test file
-pytest tests/test_client.py
+.venv/bin/pytest tests/test_client.py
 
 # Run a single test
-pytest tests/test_client.py::test_rate_limiting
+.venv/bin/pytest tests/test_client.py::test_rate_limiting
+
+# Format code
+.venv/bin/black .
 ```
+
+For setup/install testing use a separate venv: `uv venv --python 3.11 --clear /tmp/slack-mcp-setup-venv`. Do NOT use bare `pip` — use `.venv/bin/python -m pip` or `uv` commands.
+
+A global pre-commit config at `~/.config/pre-commit/config.yaml` runs `black` and markdownlint on every commit. If the hook auto-fixes formatting, re-add the fixed files and retry the commit.
 
 ## Project Structure (per spec)
 
@@ -97,3 +106,9 @@ slack-mcp/
 - The `xoxc-`/`xoxd-` tokens have the same privilege level as the user's Slack login — treat as passwords
 - Setup script must warn: "These credentials grant full Slack access. Do not share credentials.json."
 - Stale token warning: emit to stderr if `extracted_at` is older than 300 days (cookie TTL ~1 year)
+- Never commit secrets, tokens, PII, or Slack credentials. Always run `git diff --cached | grep -iE 'xox[cd]-|password|secret|token'` before committing files that could contain credentials
+
+## Git Workflow
+
+- Never commit directly to `main` — a pre-commit hook blocks it. Always create a feature branch first: `git checkout -b claude/<name>-$(date +%s)`
+- `gh pr merge <N> --squash --delete-branch` requires prior user authorization via `~/.claude/hooks/merge-lock.sh authorize <N> "reason"` — do not retry on failure, wait for the user to approve
