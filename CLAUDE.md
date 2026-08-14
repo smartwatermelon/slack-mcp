@@ -44,7 +44,7 @@ A global pre-commit config at `~/.config/pre-commit/config.yaml` runs `black` an
 
 ## Project Structure (per spec)
 
-```
+```text
 slack-mcp/
 ├── pyproject.toml
 ├── setup.py              # one-time token extraction CLI
@@ -83,11 +83,12 @@ slack-mcp/
 - **Rate limiting**: On HTTP 429, wait `Retry-After` seconds and retry once, then raise
 - **Pagination**: Client does NOT paginate internally — individual tools handle cursor iteration up to their `limit` parameter
 - **`credentials.json` must never be committed** — add to `.gitignore` immediately
+- **`mcp` dependency is pinned `<2.0.0`** — `mcp` 2.0.0 removed/relocated `mcp.server.fastmcp`, which `server.py` and every `tools/*.py` module import directly (issue #26). Before raising this bound, confirm where `fastmcp` (or its replacement) lives in the target 2.x release and update imports accordingly.
 
 ## Error Handling Conventions
 
 | Condition | Behavior |
-|---|---|
+| --- | --- |
 | `credentials.json` missing | Fatal exit 1 with setup instructions |
 | Slack API `ok: false` | Raise `SlackAPIError(error_code)` |
 | HTTP 429 | Wait `Retry-After`, retry once, then raise |

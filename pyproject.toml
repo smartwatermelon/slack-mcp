@@ -3,6 +3,9 @@ name = "slack-mcp"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
+    # mcp 2.0.0 removed/relocated mcp.server.fastmcp, which server.py and
+    # every tools/*.py module import directly (see issue #26). Bumping past
+    # <2.0.0 requires confirming fastmcp's new import path first.
     "mcp>=1.0.0,<2.0.0",
     "httpx>=0.27",
 ]
