@@ -93,7 +93,7 @@ Tools default to the first workspace; pass `workspace="name"` to target a specif
 ## Tools
 
 | Tool | Parameters | Description |
-|---|---|---|
+| --- | --- | --- |
 | `list_workspaces` | — | List all configured workspaces |
 | `list_channels` | `workspace`, `types`, `limit` | List channels (public and/or private) |
 | `get_channel_history` | `channel_id`, `workspace`, `limit`, `oldest`, `latest` | Get messages from a channel |
