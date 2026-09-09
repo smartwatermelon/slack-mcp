@@ -21,7 +21,7 @@ Every API call must include **both**: `Authorization: Bearer xoxc-...` and `Cook
 
 ## Architecture
 
-```
+```text
 Claude Code CLI
     │  stdio (MCP protocol)
     ▼
@@ -42,7 +42,7 @@ Token extraction (via `slacktokens`) is deliberately decoupled from the server r
 
 ## Project Structure
 
-```
+```text
 slack-mcp/
 ├── pyproject.toml
 ├── README.md
@@ -73,8 +73,8 @@ This is a standalone CLI script, **not** part of the running server. Run it once
 2. Call `slacktokens.get_tokens_and_cookie()`.
 3. `slacktokens` returns a `cookie` field and a `tokens` dict. Each token entry includes the workspace URL. For each workspace, identify which `d` cookie is correct by attempting the session state extraction: make an HTTP GET to the workspace URL with `Cookie: d=<value>` for each candidate cookie, and use whichever returns a valid `xoxc-` token. In practice, workspaces from the same login will share a `d` cookie, but workspaces from different logins will not — store the correct `d_cookie` value **per workspace** regardless.
 4. Extract the `xoxc-` token from the `api_token` field in the session state JSON blob embedded in the HTML response. Use the regex `xox[a-zA-Z]-[a-zA-Z0-9-]+` against the raw response body.
-4. Write the result to `~/.config/slack-mcp/credentials.json` with mode `0600`.
-5. Print a summary: workspace names, token prefixes (first 12 chars + `...`), and cookie prefix.
+5. Write the result to `~/.config/slack-mcp/credentials.json` with mode `0600`.
+6. Print a summary: workspace names, token prefixes (first 12 chars + `...`), and cookie prefix.
 
 ### Credentials File Format
 
@@ -296,7 +296,7 @@ Note: `slacktokens` itself depends on `pycookiecheat` (for cookie decryption fro
 ## Error Handling
 
 | Condition | Behavior |
-|---|---|
+| --- | --- |
 | `credentials.json` missing | Fatal: exit 1, print setup instructions |
 | Slack API `ok: false` | Raise `SlackAPIError(error_code)`, surface in tool response |
 | HTTP 429 | Wait `Retry-After`, retry once, then raise |

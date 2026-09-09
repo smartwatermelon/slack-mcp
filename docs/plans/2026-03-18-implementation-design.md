@@ -12,7 +12,7 @@ Date: 2026-03-18
 
 ## Project Structure
 
-```
+```text
 slack-mcp/
 ├── .github/
 │   └── workflows/
