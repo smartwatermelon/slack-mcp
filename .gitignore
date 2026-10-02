@@ -6,3 +6,7 @@ dist/
 .venv/
 .env
 uv.lock
+
+# Claude Code local state and the generated .claude/ scaffold.
+# Share a file by negating it: .claude/* then !.claude/<path>
+.claude/
