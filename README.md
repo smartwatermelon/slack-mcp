@@ -36,6 +36,22 @@ No Slack app registration required. No OAuth. Tokens are scoped to your own acco
 
 ## Installation
 
+### Quick install
+
+```bash
+git clone https://github.com/smartwatermelon/slack-mcp
+cd slack-mcp
+scripts/install.sh
+```
+
+The script needs [`uv`](https://docs.astral.sh/uv/) and Claude Code. It builds
+`.venv` with uv-managed Python 3.11, installs the package, extracts tokens if
+`~/.config/slack-mcp/credentials.json` is missing (it asks before quitting
+Slack), and registers the server with Claude Code. Pass `--refresh-tokens` to
+re-extract tokens. Restart your Claude Code session afterward.
+
+### Manual install
+
 ```bash
 # 1. Clone the repo
 git clone https://github.com/smartwatermelon/slack-mcp
