@@ -59,22 +59,22 @@ if [[ ! -f "${CREDS_FILE}" || "${refresh_tokens}" -eq 1 ]]; then
       sleep 1
     done
     pgrep -xq Slack && die "Slack is still running. Quit it with Cmd+Q and re-run."
-    reopen_slack=1
+    # Reopen Slack on every exit path, including a failed setup.
+    trap 'open -a Slack' EXIT
   fi
   "${SETUP_BIN}"
-  if [[ "${reopen_slack:-0}" -eq 1 ]]; then
-    open -a Slack
-  fi
 else
   echo "==> Credentials found at ${CREDS_FILE}; skipping token extraction (use --refresh-tokens to redo)."
 fi
 
 # 5. Register with Claude Code (user scope, so it works in every project)
-if claude mcp get slack-mcp 2>/dev/null | grep -qF "Command: ${SERVER_BIN}"; then
-  echo "==> slack-mcp already registered with Claude Code at ${SERVER_BIN}"
-elif claude mcp get slack-mcp >/dev/null 2>&1; then
-  echo "==> slack-mcp is registered with a different command. To replace it, run:"
-  echo "      claude mcp remove slack-mcp && claude mcp add -s user slack-mcp -- ${SERVER_BIN}"
+if registration="$(claude mcp get slack-mcp 2>/dev/null)"; then
+  if [[ "${registration}" == *"Command: ${SERVER_BIN}"* ]]; then
+    echo "==> slack-mcp already registered with Claude Code at ${SERVER_BIN}"
+  else
+    die "slack-mcp is registered with a different command. Replace it with:
+      claude mcp remove slack-mcp && claude mcp add -s user slack-mcp -- ${SERVER_BIN}"
+  fi
 else
   echo "==> Registering slack-mcp with Claude Code"
   claude mcp add -s user slack-mcp -- "${SERVER_BIN}"
