@@ -51,6 +51,8 @@ uv pip install --python "${VENV_DIR}/bin/python" -e "${REPO_DIR}[setup]"
 if [[ ! -f "${CREDS_FILE}" || "${refresh_tokens}" -eq 1 ]]; then
   echo "==> Extracting Slack tokens. Slack must be quit for this step."
   if pgrep -xq Slack; then
+    # Without a terminal, read prints no prompt and hits EOF, and set -e exits silently.
+    [[ -t 0 ]] || die "Slack is running and there is no terminal to ask. Quit Slack (Cmd+Q), then re-run."
     read -r -p "Quit Slack now? [y/N] " reply
     [[ "${reply}" =~ ^[Yy]$ ]] || die "Quit Slack, then re-run this script."
     osascript -e 'quit app "Slack"'
