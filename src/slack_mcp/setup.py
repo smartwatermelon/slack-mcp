@@ -120,6 +120,12 @@ def main() -> None:
         )
         sys.exit(1)
 
+    # Tools default to the first workspace. Enterprise orgs reject most calls
+    # (enterprise_is_restricted), so sort them last.
+    workspaces = dict(
+        sorted(workspaces.items(), key=lambda kv: kv[0].endswith(".enterprise"))
+    )
+
     creds = Credentials(workspaces=workspaces, extracted_at=datetime.now(timezone.utc))
     save_credentials(creds)
 

@@ -66,6 +66,34 @@ def test_main_extracts_tokens_from_leveldb(monkeypatch):
     assert ws.d_cookie == "xoxd-xyz789"
 
 
+def test_main_puts_enterprise_workspaces_last(monkeypatch):
+    """The default workspace is the first one; an enterprise grid org must not be it."""
+    mock_slacktokens = MagicMock()
+    mock_slacktokens.get_tokens_and_cookie.return_value = {
+        "tokens": {
+            "https://acme.enterprise.slack.com/": {"token": "xoxc-ent"},
+            "https://acme.slack.com/": {"token": "xoxc-ws"},
+            "https://other.slack.com/": {"token": "xoxc-other"},
+        },
+        "cookie": {"name": "d", "value": "xoxd-xyz789"},
+    }
+    monkeypatch.setitem(sys.modules, "slacktokens", mock_slacktokens)
+    if "slack_mcp.setup" in sys.modules:
+        del sys.modules["slack_mcp.setup"]
+
+    with (
+        patch("subprocess.run", return_value=MagicMock(returncode=1)),
+        patch("slack_mcp.setup._patch_pycookiecheat_for_direct_download"),
+        patch("slack_mcp.auth.save_credentials") as mock_save,
+    ):
+        from slack_mcp import setup as setup_mod
+
+        setup_mod.main()
+
+    saved_creds = mock_save.call_args[0][0]
+    assert list(saved_creds.workspaces) == ["acme", "other", "acme.enterprise"]
+
+
 def test_main_exits_if_no_workspaces_extracted(monkeypatch):
     """If all workspaces are skipped (no tokens), exit 1."""
     mock_slacktokens = MagicMock()
